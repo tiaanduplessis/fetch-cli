@@ -34,10 +34,6 @@ if (!url) {
         config.method = "Post";
     }
 
-    console.log(argv.post)
-    console.log(argv.url)
-    process.exit()
-
   const prettyjsonOpts = {
     dashColor: 'magenta'
   }
