@@ -5,9 +5,23 @@ const prettyjson = require('prettyjson')
 const parse = require('get-them-args')
 const tenaciousFetch = require('tenacious-fetch')
 const fetch = require('node-fetch')
+const yargs = require('yargs')
+
+const argv = yargs.option('post', {
+    description: 'Turns on POST mode',
+    type: 'boolean',
+    default: false
+})
+.command('$0 <url>', '', (yargs) => {
+    yargs.positional('url', {
+        describe: 'URL',
+        type: 'string'
+    })
+}).argv
+
 
 const { config = {}, unknown = [] } = parse()
-const url = unknown.length > 0 && unknown[0]
+const url = argv.url
 
 if (!url) {
   console.error('URL not provided')
@@ -15,6 +29,10 @@ if (!url) {
   const opts = Object.assign({
     fetcher: fetch
   }, config)
+
+    if(argv.post) {
+        config.method = "Post";
+    }
 
   const prettyjsonOpts = {
     dashColor: 'magenta'
