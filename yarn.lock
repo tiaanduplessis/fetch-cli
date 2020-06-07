@@ -23,6 +23,11 @@
   resolved "https://registry.yarnpkg.com/@types/color-name/-/color-name-1.1.1.tgz#1c1261bbeaa10a8055bbc5d8ab84b7b2afc846a0"
   integrity sha512-rr+OQyAjxze7GgWrSaJwydHStIhHq2lvY3BOC2Mj7KnzI7XK0Uw1TOOdI9lDoajEbSWLiYgoo4f1R51erQfhPQ==
 
+abortcontroller-polyfill@^1.2.4:
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/abortcontroller-polyfill/-/abortcontroller-polyfill-1.4.0.tgz#0d5eb58e522a461774af8086414f68e1dda7a6c4"
+  integrity sha512-3ZFfCRfDzx3GFjO6RAkYx81lPGpUS20ISxux9gLxuKnqafNcFQo59+IoZqpO2WvQlyc287B62HDnDdNYRmlvWA==
+
 acorn-jsx@^5.0.2:
   version "5.0.2"
   resolved "https://registry.yarnpkg.com/acorn-jsx/-/acorn-jsx-5.0.2.tgz#84b68ea44b373c4f8686023a551f61a21b7c4a4f"
@@ -1534,10 +1539,13 @@ table@^5.2.3:
     slice-ansi "^2.1.0"
     string-width "^3.0.0"
 
-tenacious-fetch@^2.2.2:
-  version "2.2.2"
-  resolved "https://registry.yarnpkg.com/tenacious-fetch/-/tenacious-fetch-2.2.2.tgz#1d2cfdcb2eb270d2b5b47b5f0f04d76e6a203203"
-  integrity sha512-DS3GOokfk5p5I7EeUS/FYGBy5r0MwRjjrwTkhOP/CrW8iUGoO5hsV3V8EQdEraDtGDvevPTPj1weRH4qNmzXsA==
+tenacious-fetch@^2.3.0:
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/tenacious-fetch/-/tenacious-fetch-2.3.0.tgz#75ef36aa0e3e0e9a86372961b6f27d914faf202f"
+  integrity sha512-kaeVtJB2tKl+OVJXK+8a2QQzTjJ+yMqFGMFNU9SkuWpsjiPk+Zf6FevEA043dQkEmpibK1+gwSfxdFtLeYP03A==
+  dependencies:
+    abortcontroller-polyfill "^1.2.4"
+    whatwg-fetch "^3.0.0"
 
 text-table@^0.2.0:
   version "0.2.0"
@@ -1597,6 +1605,11 @@ validate-npm-package-license@^3.0.1:
   dependencies:
     spdx-correct "^3.0.0"
     spdx-expression-parse "^3.0.0"
+
+whatwg-fetch@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/whatwg-fetch/-/whatwg-fetch-3.0.0.tgz#fc804e458cc460009b1a2b966bc8817d2578aefb"
+  integrity sha512-9GSJUgz1D4MfyKU7KRqwOjXCXTqWdFNvEr7eUBYchQiVc744mqK/MzXPNR2WsPkmkOa4ywfg8C2n8h+13Bey1Q==
 
 which-module@^2.0.0:
   version "2.0.0"
