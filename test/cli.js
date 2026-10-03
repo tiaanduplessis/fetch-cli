@@ -85,9 +85,9 @@ function cli (args) {
   })
 }
 
-async function request (url, config) {
+async function request (url, config, flags) {
   observations.length = 0
-  const result = await cli([url, '--config=' + JSON.stringify(Object.assign({ retries: 0, headers: sensitive }, config))])
+  const result = await cli([url, '--config=' + JSON.stringify(Object.assign({ retries: 0, headers: sensitive }, config))].concat(flags || []))
   assert.strictEqual(result.code, 0, result.stderr)
   return result
 }
@@ -158,6 +158,60 @@ async function main () {
     assert.strictEqual(observations[0].method, 'POST')
     assert.strictEqual(observations[0].body, 'synthetic-body')
   })
+  await test('--post sends POST with no configured body', async () => {
+    const result = await request(source + '/echo', {}, ['--post'])
+    assert(result.stdout.indexOf('200 OK') !== -1)
+    assert.strictEqual(observations.length, 1)
+    assert.strictEqual(observations[0].method, 'POST')
+    assert.strictEqual(observations[0].body, '')
+    checkHeaders(false)
+  })
+  await test('--post preserves configured body and headers', async () => {
+    await request(source + '/echo', { body: 'synthetic-body' }, ['--post'])
+    assert.strictEqual(observations.length, 1)
+    assert.strictEqual(observations[0].method, 'POST')
+    assert.strictEqual(observations[0].body, 'synthetic-body')
+    checkHeaders(false)
+  })
+  await test('--post works before the URL without --config', async () => {
+    observations.length = 0
+    const result = await cli(['--post', source + '/echo'])
+    assert.strictEqual(result.code, 0, result.stderr)
+    assert.strictEqual(observations.length, 1)
+    assert.strictEqual(observations[0].method, 'POST')
+  })
+  await test('disabled --post keeps the default GET method', async () => {
+    for (const flag of ['--post=false', '--no-post']) {
+      await request(source + '/echo', {}, [flag])
+      assert.strictEqual(observations[0].method, 'GET')
+      assert.strictEqual(observations[0].body, '')
+    }
+  })
+  await test('explicit configured methods take precedence over --post', async () => {
+    for (const method of ['GET', 'HEAD', 'PUT', 'PATCH', 'DELETE', 'POST']) {
+      await request(source + '/echo', { method: method }, ['--post'])
+      assert.strictEqual(observations.length, 1)
+      assert.strictEqual(observations[0].method, method)
+      checkHeaders(false)
+    }
+    await request(source + '/echo', { method: 'PUT', body: 'synthetic-body' }, ['--post'])
+    assert.strictEqual(observations[0].method, 'PUT')
+    assert.strictEqual(observations[0].body, 'synthetic-body')
+  })
+  await test('configured method wins regardless of argument order', async () => {
+    observations.length = 0
+    const result = await cli(['--post', source + '/echo', '--config={"method":"PATCH","retries":0}'])
+    assert.strictEqual(result.code, 0, result.stderr)
+    assert.strictEqual(observations.length, 1)
+    assert.strictEqual(observations[0].method, 'PATCH')
+  })
+  await test('--post still reports invalid GET bodies and connection errors', async () => {
+    const result = await request(source + '/echo', { method: 'GET', body: 'synthetic-body' }, ['--post'])
+    assert(result.stdout.indexOf('Request with GET/HEAD method cannot have body') !== -1, result.stdout)
+    assert.strictEqual(observations.length, 0)
+    assert((await request(source + '/reset', {}, ['--post'])).stdout.indexOf('socket hang up') !== -1)
+    assert.strictEqual(observations[0].method, 'POST')
+  })
   await test('same hostname across ports and subdomain retain headers', async () => {
     for (const destination of [same, subdomain]) {
       await request(redirect(source, destination + '/echo'))
@@ -172,6 +226,16 @@ async function main () {
     await test(status + ' cross-host redirect strips protected headers', async () => {
       await request(redirect(source, target + '/echo', status))
       assert.strictEqual(observations.length, 2)
+      checkHeaders(true)
+    })
+    await test(status + ' --post redirect follows Fetch method/body rules', async () => {
+      await request(redirect(source, target + '/echo', status), { body: 'synthetic-body' }, ['--post'])
+      assert.strictEqual(observations.length, 2)
+      assert.strictEqual(observations[0].method, 'POST')
+      assert.strictEqual(observations[0].body, 'synthetic-body')
+      const last = observations[observations.length - 1]
+      assert.strictEqual(last.method, status === 307 || status === 308 ? 'POST' : 'GET')
+      assert.strictEqual(last.body, status === 307 || status === 308 ? 'synthetic-body' : '')
       checkHeaders(true)
     })
     await test(status + ' POST redirect follows Fetch method/body rules', async () => {

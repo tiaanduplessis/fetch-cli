@@ -35,9 +35,16 @@ $ yarn add @tiaanduplessis/fetch-cli
 ## Usage
 
 ```sh
-$ fetch https://jsonplaceholder.typicode.com/todos/1 --config={method: "Post"}
+$ fetch http://localhost:3000/todos/1
+$ fetch http://localhost:3000/todos --post
+$ fetch http://localhost:3000/todos --post --config='{"body":"example body","headers":{"Content-Type":"text/plain"}}'
+$ fetch http://localhost:3000/todos/1 --config='{"method":"PUT","body":"updated body"}'
 ```
 
+Requests use GET by default. `--post` selects POST; an explicit `method` in
+`--config` takes precedence over `--post`. `--post=false` and `--no-post` leave
+the default method unchanged. Body and header options are passed through from
+`--config`.
 
 ## Testing
 

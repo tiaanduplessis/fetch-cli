@@ -8,31 +8,27 @@ const fetch = require('node-fetch')
 const yargs = require('yargs')
 
 const argv = yargs.option('post', {
-    description: 'Turns on POST mode',
-    type: 'boolean',
-    default: false
+  description: 'Turns on POST mode',
+  type: 'boolean',
+  default: false
 })
-.command('$0 <url>', '', (yargs) => {
+  .command('$0 <url>', '', (yargs) => {
     yargs.positional('url', {
-        describe: 'URL',
-        type: 'string'
+      describe: 'URL',
+      type: 'string'
     })
-}).argv
+  }).argv
 
-
-const { config = {}, unknown = [] } = parse()
+const { config = {} } = parse()
 const url = argv.url
 
 if (!url) {
   console.error('URL not provided')
 } else {
   const opts = Object.assign({
-    fetcher: fetch
+    fetcher: fetch,
+    method: argv.post ? 'POST' : 'GET'
   }, config)
-
-    if(argv.post) {
-        config.method = "Post";
-    }
 
   const prettyjsonOpts = {
     dashColor: 'magenta'
