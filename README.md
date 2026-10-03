@@ -14,6 +14,7 @@
 - [About](#about)
 - [Install](#install)
 - [Usage](#usage)
+- [Testing](#testing)
 - [Contribute](#contribute)
 - [License](#License)
 
@@ -37,6 +38,24 @@ $ yarn add @tiaanduplessis/fetch-cli
 $ fetch https://jsonplaceholder.typicode.com/todos/1 --config={method: "Post"}
 ```
 
+
+## Testing
+
+```sh
+$ yarn install --frozen-lockfile --ignore-scripts
+$ yarn test
+```
+
+The CLI regression tests use HTTP and HTTPS servers bound to loopback, synthetic
+headers, and a test-only certificate. A child-process socket guard rejects
+connections outside those local fixtures. No public endpoints are contacted.
+
+Redirect tests cover the standard protected headers handled by node-fetch 2.x,
+response-size limits, method/body handling, and error modes. The upstream header
+policy allows redirects to the same hostname (including other ports) and its
+subdomains when the protocol stays the same. It does not protect arbitrary
+custom headers or `Proxy-Authorization`; use `--config='{"redirect":"error"}'`
+when redirects should not be followed.
 
 ## Contribute
 
