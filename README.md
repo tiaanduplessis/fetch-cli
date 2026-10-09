@@ -43,8 +43,13 @@ $ fetch http://localhost:3000/todos/1 --config='{"method":"PUT","body":"updated 
 
 Requests use GET by default. `--post` selects POST; an explicit `method` in
 `--config` takes precedence over `--post`. `--post=false` and `--no-post` leave
-the default method unchanged. Body and header options are passed through from
-`--config`.
+the default method unchanged. When these flags repeat, the last value wins:
+`--post --no-post` uses GET, while `--no-post --post` uses POST. An explicit
+configured method still takes precedence. Body and header options are passed
+through from `--config`.
+
+The CLI stays on `tenacious-fetch` 2.2.x because the published 2.3.x builds
+require browser globals during module loading and fail in Node.js.
 
 ## Testing
 

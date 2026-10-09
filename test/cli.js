@@ -56,9 +56,11 @@ function listen (secure) {
   })
 }
 
-function cli (args) {
+function cli (args, guardPrototype) {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, ['--require', path.join(fixture, 'loopback-only.js'), entry].concat(args), {
+    const preload = ['--require', path.join(fixture, 'loopback-only.js')]
+    if (guardPrototype) preload.push('--require', path.join(fixture, 'prototype-guard.js'))
+    const child = spawn(process.execPath, preload.concat(entry, args), {
       cwd: root,
       env: {
         PATH: process.env.PATH,
@@ -126,7 +128,7 @@ async function main () {
   const lookalike = 'http://evilsource.test:' + second
   const tls = 'https://source.test:' + secure
 
-  await test('help and version do not make requests', async () => {
+  await test('help and version work without browser globals and make no requests', async () => {
     const before = observations.length
     assert.strictEqual((await cli(['--help'])).code, 0)
     assert.strictEqual((await cli(['--version'])).stdout.trim(), require('../package.json').version)
@@ -186,6 +188,78 @@ async function main () {
       assert.strictEqual(observations[0].method, 'GET')
       assert.strictEqual(observations[0].body, '')
     }
+  })
+  await test('repeated POST flags use the last boolean value', async () => {
+    const cases = [
+      [['--post', '--no-post'], 'GET'],
+      [['--no-post', '--post'], 'POST'],
+      [['--post', '--post=false'], 'GET'],
+      [['--post=false', '--post'], 'POST'],
+      [['--post=false', '--post=false'], 'GET'],
+      [['--post', '--post'], 'POST'],
+      [['--post=true', '--no-post', '--post=false'], 'GET'],
+      [['--no-post', '--post=false', '--post=true'], 'POST']
+    ]
+    for (const pair of cases) {
+      await request(source + '/echo', {}, pair[0])
+      assert.strictEqual(observations.length, 1)
+      assert.strictEqual(observations[0].method, pair[1], pair[0].join(' '))
+      assert.strictEqual(observations[0].body, '')
+      checkHeaders(false)
+    }
+  })
+  await test('repeated POST flags work on both sides of the URL', async () => {
+    for (const pair of [['--post', '--no-post', 'GET'], ['--no-post', '--post', 'POST']]) {
+      observations.length = 0
+      const result = await cli([pair[0], source + '/echo', pair[1]])
+      assert.strictEqual(result.code, 0, result.stderr)
+      assert.strictEqual(observations.length, 1)
+      assert.strictEqual(observations[0].method, pair[2])
+    }
+  })
+  await test('configured methods override repeated POST flags', async () => {
+    for (const flags of [['--post', '--no-post'], ['--no-post', '--post']]) {
+      await request(source + '/echo', { method: 'PATCH', body: 'synthetic-body' }, flags)
+      assert.strictEqual(observations.length, 1)
+      assert.strictEqual(observations[0].method, 'PATCH')
+      assert.strictEqual(observations[0].body, 'synthetic-body')
+      checkHeaders(false)
+    }
+  })
+  await test('final false POST flag retains GET body validation', async () => {
+    const result = await request(source + '/echo', { body: 'synthetic-body' }, ['--post', '--no-post'])
+    assert(result.stdout.indexOf('Request with GET/HEAD method cannot have body') !== -1, result.stdout)
+    assert.strictEqual(observations.length, 0)
+  })
+  await test('help describes the URL and POST flag without making requests', async () => {
+    observations.length = 0
+    const result = await cli(['--post', '--no-post', '--help'])
+    assert.strictEqual(result.code, 0, result.stderr)
+    assert(result.stdout.indexOf('<url>') !== -1, result.stdout)
+    assert(result.stdout.indexOf('--post') !== -1, result.stdout)
+    assert(result.stdout.indexOf('Turns on POST mode') !== -1, result.stdout)
+    assert(result.stdout.indexOf('[boolean]') !== -1, result.stdout)
+    assert.strictEqual(observations.length, 0)
+  })
+  await test('repeated POST flags without a URL still report usage', async () => {
+    observations.length = 0
+    const result = await cli(['--post', '--no-post'])
+    assert.notStrictEqual(result.code, 0)
+    assert(result.stderr.indexOf('Not enough non-option arguments') !== -1, result.stderr)
+    assert.strictEqual(observations.length, 0)
+  })
+  await test('prototype-like argument keys remain owned parser data', async () => {
+    observations.length = 0
+    const result = await cli([source + '/echo', '--fixture.__proto__.fetchCliMarker=fixture-only', '--config={"retries":0}'], true)
+    assert.strictEqual(result.code, 0, result.stderr)
+    assert(result.stdout.indexOf('200 OK') !== -1, result.stdout)
+    assert.strictEqual(observations.length, 1)
+    assert.strictEqual(observations[0].method, 'GET')
+  })
+  await test('option-looking query values remain part of the URL', async () => {
+    const result = await request(source + '/echo?value=--post&other=false')
+    assert(result.stdout.indexOf('200 OK') !== -1, result.stdout)
+    assert.strictEqual(observations[0].method, 'GET')
   })
   await test('explicit configured methods take precedence over --post', async () => {
     for (const method of ['GET', 'HEAD', 'PUT', 'PATCH', 'DELETE', 'POST']) {

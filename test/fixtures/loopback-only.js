@@ -1,5 +1,8 @@
 'use strict'
 
+const assert = require('assert')
+assert.strictEqual(typeof global.window, 'undefined', 'CLI fixtures must not provide browser globals')
+
 // Test-only DNS and socket guard. No request can leave the local fixtures.
 const dns = require('dns')
 const net = require('net')
